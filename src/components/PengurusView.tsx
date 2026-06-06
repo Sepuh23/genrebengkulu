@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react'
 import { type Pengurus } from '@/lib/supabase'
 import Image from 'next/image'
 import { Instagram, Search, ClipboardList } from 'lucide-react'
-// ❌ JANGAN ADA import PengurusView di sini!
 
 // Definisikan tipe untuk struktur_jabatan
 interface StrukturJabatan {
@@ -19,6 +18,10 @@ interface ExtendedPengurus extends Pengurus {
 
 interface OrganizationStructureProps {
   pengurus: ExtendedPengurus[]
+}
+
+export default function PengurusView({ pengurus }: OrganizationStructureProps) {
+  // ... semua kode logic component Anda di sini ...
 }
 
 export default function PengurusView({ pengurus }: OrganizationStructureProps) {
