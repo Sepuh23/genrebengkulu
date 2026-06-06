@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@theme {
+  /* Timing */
+  --default-transition-duration: 300ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Brand Colors: Black / White / Red */
+  --color-primary: #d11e28;      /* red */
+  --color-primary-600: #ba1b23;
+  --color-primary-700: #a0171e;
+  --color-primary-50: #feecee;
+
+  /* Ink becomes near-black */
+  --color-ink: #121315;
+  --color-ink-600: #0f1012;
+  --color-ink-700: #0b0c0e;
+
+  /* Neutral grays for surfaces */
+  --color-gray-50: #f8f9fb;
+  --color-gray-100: #f2f3f5;
+  --color-gray-200: #e6e8eb;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: #fafafa;
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --radius: 14px;
+}
+
+/* Configure dark mode to use class strategy */
+@variant dark (.dark &);
+
+:root {
+  --background: linear-gradient(180deg, #ffffff 0%, var(--color-surface-muted) 100%);
+  --foreground: var(--color-ink);
+  --border: color-mix(in oklab, #000 12%, #e5e7eb);
+}
+
+.dark {
+  --background: linear-gradient(180deg, #0b0b0c 0%, #0a0a0b 60%, #090909 100%);
+  --foreground: #f3f4f6;
+  --border: rgba(255, 255, 255, 0.12);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  font-weight: 500; /* Poppins Medium */
+  transition: background-color var(--default-transition-duration) var(--default-transition-timing-function),
+              color var(--default-transition-duration) var(--default-transition-timing-function);
+}
+
+/* Minimalist containers */
+.container-page {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Cards */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+
+/* Brand buttons */
+.btn-brand {
+  @apply inline-flex items-center gap-2 font-medium rounded-lg px-4 py-2 transition-colors duration-200 shadow-sm;
+  background-color: var(--color-primary);
+  color: white;
+}
+.btn-brand:hover { background-color: var(--color-primary-600); }
+.btn-brand:active { background-color: var(--color-primary-700); }
+
+.btn-ghost {
+  @apply inline-flex items-center gap-2 font-medium rounded-lg px-3 py-2;
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--color-ink);
+}
+.btn-ghost:hover { background-color: rgba(0, 0, 0, 0.06); }
+
+/* Headings refinement */
+h1,h2,h3 { letter-spacing: -0.015em; }
+p { line-height: 1.65; }
+
+/* Subtle separators */
+.divider { border-top: 1px solid var(--border); }
+
+/* Scrollbar (webkit) subtle */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: color-mix(in oklab, #000 20%, #cfd1d6); border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
