@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react'
 import { type Pengurus } from '@/lib/supabase'
 import Image from 'next/image'
 import { Instagram, Search, ClipboardList } from 'lucide-react'
+// ❌ JANGAN ADA import PengurusView di sini!
 
 // Definisikan tipe untuk struktur_jabatan
 interface StrukturJabatan {
