@@ -210,6 +210,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     setUploadingImage(false)
   }
 
+  // FIX 1: Handle null/undefined in openModal
   const openModal = (item: Pengurus | StrukturJabatan | null = null) => {
     resetForms()
     if (item) {
@@ -218,14 +219,20 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
         setPengurusForm({
           ...initialPengurusForm,
           ...item,
-          jabatan_id: item.jabatan_id.toString(),
-          instagram: item.instagram || '',
-          image_url: item.image_url || '',
-          role_type: (item.role_type as 'administrator' | 'member') || 'administrator',
+          jabatan_id: item.jabatan_id?.toString() ?? '', // FIX: safe navigation
+          instagram: item.instagram ?? '',
+          image_url: item.image_url ?? '',
+          role_type: (item.role_type === 'administrator' || item.role_type === 'member') 
+            ? item.role_type 
+            : 'administrator',
         })
         if (item.image_url) setImagePreview(item.image_url)
       } else { // Struktur
-        setStrukturForm({ ...initialStrukturForm, ...item, urutan: item.urutan.toString() })
+        setStrukturForm({ 
+          ...initialStrukturForm, 
+          ...item, 
+          urutan: item.urutan?.toString() ?? '' 
+        })
       }
     }
     setIsModalOpen(true)
@@ -256,6 +263,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     }
   }
 
+  // FIX 2: Add validation for jabatan_id
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -271,20 +279,36 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
         }
 
         const { nama, jabatan_id, periode } = pengurusForm
-        if (!nama?.trim() || !jabatan_id || !periode?.trim()) {
-          throw new Error('Nama, Jabatan, dan Periode wajib diisi.')
+        if (!nama?.trim()) throw new Error('Nama wajib diisi.')
+        if (!jabatan_id) throw new Error('Jabatan wajib dipilih.')
+        if (!periode?.trim()) throw new Error('Periode wajib diisi.')
+        
+        const jabatanIdNum = parseInt(jabatan_id)
+        if (isNaN(jabatanIdNum)) throw new Error('ID Jabatan tidak valid')
+        
+        const payload = { 
+          ...pengurusForm, 
+          image_url: imageUrl, 
+          jabatan_id: jabatanIdNum 
         }
-        const payload = { ...pengurusForm, image_url: imageUrl, jabatan_id: parseInt(jabatan_id) }
+        
         const { error } = editingItem
           ? await supabase.from('pengurus').update(payload).eq('id', editingItem.id)
           : await supabase.from('pengurus').insert(payload)
         if (error) throw new Error(error.message)
       } else {
         const { nama_jabatan, urutan } = strukturForm
-        if (!nama_jabatan?.trim() || !urutan?.trim()) {
-          throw new Error('Nama Jabatan dan Urutan wajib diisi.')
+        if (!nama_jabatan?.trim()) throw new Error('Nama Jabatan wajib diisi.')
+        if (!urutan?.trim()) throw new Error('Urutan wajib diisi.')
+        
+        const urutanNum = parseInt(urutan)
+        if (isNaN(urutanNum)) throw new Error('Urutan harus berupa angka')
+        
+        const payload = { 
+          nama_jabatan, 
+          urutan: urutanNum 
         }
-        const payload = { ...strukturForm, urutan: parseInt(urutan) }
+        
         const { error } = editingItem
           ? await supabase.from('struktur_jabatan').update(payload).eq('id', editingItem.id)
           : await supabase.from('struktur_jabatan').insert(payload)
@@ -532,7 +556,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
           </tbody>
         </table>
       </div>
-      {/* Removed bottom bulk actions to keep UI consistent with Pengurus toolbar */}
     </div>
   )
 
