@@ -1,29 +1,62 @@
-'use client'
+"use client"
 
-import React, { useMemo, useState } from 'react'
-import { type Pengurus } from '@/lib/supabase'
-import Image from 'next/image'
-import { Instagram, Search, ClipboardList } from 'lucide-react'
-import PengurusView from '@/components/PengurusView'
-// Definisikan tipe untuk struktur_jabatan
-interface StrukturJabatan {
-  urutan: number
-  nama_jabatan: string
-}
+import { useState, useEffect } from 'react'
+import { supabase, type Pengurus } from '@/lib/supabase'
+import { Navigation } from '@/components/Navigation'
+import { Footer } from '@/components/Footer'
+import PengurusView from '@/components/PengurusView'  // ← import komponen
 
-// Perluas tipe Pengurus untuk include struktur_jabatan
-interface ExtendedPengurus extends Pengurus {
-  struktur_jabatan?: StrukturJabatan
-}
+export default function PengurusPage() {
+  const [pengurus, setPengurus] = useState<Pengurus[]>([])
+  const [loading, setLoading] = useState(true)
 
-interface OrganizationStructureProps {
-  pengurus: ExtendedPengurus[]
-}
+  useEffect(() => {
+    fetchPengurus()
+  }, [])
 
-// ✅ INI PERUBAHANNYA - tambahkan "default" setelah "export"
-export default function PengurusView({ pengurus }: OrganizationStructureProps) {
-  const [query, setQuery] = useState('')
-  const [selectedPeriode, setSelectedPeriode] = useState<string | null>(null)
-  
-  // ... sisa kode sama seperti sebelumnya (sampai akhir)
+  const fetchPengurus = async () => {
+    try {
+      const [pengurusResult, strukturResult] = await Promise.all([
+        supabase.from('pengurus').select('*'),
+        supabase.from('struktur_jabatan').select('*')
+      ])
+
+      const pengurusWithJabatan = (pengurusResult.data || [])
+        .filter(p => (p.role_type ?? 'administrator') === 'administrator')
+        .map(p => ({
+          ...p,
+          struktur_jabatan: strukturResult.data?.find(s => s.id === p.jabatan_id)
+        }))
+
+      setPengurus(pengurusWithJabatan)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <Navigation />
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      <Navigation />
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PengurusView pengurus={pengurus} />
+        </div>
+      </section>
+      <Footer />
+    </div>
+  )
 }
