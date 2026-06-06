@@ -5,13 +5,11 @@ import { type Pengurus } from '@/lib/supabase'
 import Image from 'next/image'
 import { Instagram, Search, ClipboardList } from 'lucide-react'
 
-// Definisikan tipe untuk struktur_jabatan
 interface StrukturJabatan {
   urutan: number
   nama_jabatan: string
 }
 
-// Perluas tipe Pengurus untuk include struktur_jabatan
 interface ExtendedPengurus extends Pengurus {
   struktur_jabatan?: StrukturJabatan
 }
@@ -21,7 +19,10 @@ interface OrganizationStructureProps {
 }
 
 export default function PengurusView({ pengurus }: OrganizationStructureProps) {
-  // ... semua kode logic component Anda di sini ...
+  const [query, setQuery] = useState('')
+  const [selectedPeriode, setSelectedPeriode] = useState<string | null>(null)
+
+  // ... SEMUA LOGIC COMPONENT LANGSUNG DI SINI, tanpa export default kedua
 }
 
 export default function PengurusView({ pengurus }: OrganizationStructureProps) {
