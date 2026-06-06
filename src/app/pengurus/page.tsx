@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase, type Pengurus } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/Footer'
-import PengurusView from '@/components/PengurusView' // <-- import komponen
+import PengurusView from '@/components/PengurusView'
 
 export default function PengurusPage() {
   const [pengurus, setPengurus] = useState<Pengurus[]>([])
