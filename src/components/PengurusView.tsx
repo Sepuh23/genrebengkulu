@@ -5,8 +5,19 @@ import { type Pengurus } from '@/lib/supabase'
 import Image from 'next/image'
 import { Instagram, Search, ClipboardList } from 'lucide-react'
 
+// Definisikan tipe untuk struktur_jabatan
+interface StrukturJabatan {
+  urutan: number
+  nama_jabatan: string
+}
+
+// Perluas tipe Pengurus untuk include struktur_jabatan
+interface ExtendedPengurus extends Pengurus {
+  struktur_jabatan?: StrukturJabatan
+}
+
 interface OrganizationStructureProps {
-  pengurus: Pengurus[]
+  pengurus: ExtendedPengurus[]
 }
 
 export function PengurusView({ pengurus }: OrganizationStructureProps) {
@@ -19,7 +30,7 @@ export function PengurusView({ pengurus }: OrganizationStructureProps) {
       if (!acc[person.periode]) acc[person.periode] = []
       acc[person.periode].push(person)
       return acc
-    }, {} as Record<string, Pengurus[]>)
+    }, {} as Record<string, ExtendedPengurus[]>)
   }, [pengurus])
 
   const periodes = useMemo(() => Object.keys(groupedByPeriode).sort().reverse(), [groupedByPeriode])
@@ -52,7 +63,7 @@ export function PengurusView({ pengurus }: OrganizationStructureProps) {
   }, [activePengurus, query])
 
   // Small groups (BPI, BPH, etc.) — keep original rules
-  const getGroup = (p: Pengurus) => {
+  const getGroup = (p: ExtendedPengurus) => {
     const ur = p.struktur_jabatan?.urutan ?? 999
     if (ur <= 4) return 'bpi'
     // Previously BPH (5–6) is now merged into 'perencanaan'
@@ -64,7 +75,7 @@ export function PengurusView({ pengurus }: OrganizationStructureProps) {
   }
 
   const groups = useMemo(() => {
-    return filteredPengurus.reduce((acc: Record<string, Pengurus[]>, p) => {
+    return filteredPengurus.reduce((acc: Record<string, ExtendedPengurus[]>, p) => {
       const g = getGroup(p)
       if (!acc[g]) acc[g] = []
       acc[g].push(p)
@@ -94,7 +105,7 @@ export function PengurusView({ pengurus }: OrganizationStructureProps) {
     )
   }
 
-  const MemberCard = ({ person, isLeadership = false }: { person: Pengurus; isLeadership?: boolean }) => {
+  const MemberCard = ({ person, isLeadership = false }: { person: ExtendedPengurus; isLeadership?: boolean }) => {
     const roleLabel = person.struktur_jabatan?.nama_jabatan ?? 'Jabatan tidak diketahui'
     const fallback = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=60'
     const photo = person.image_url || fallback
