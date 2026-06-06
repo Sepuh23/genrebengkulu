@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase, type FormControl, type Pengurus, type PikRSubmission, type StrukturJabatan, type Kegiatan, type DutaGenreCategory, type DutaGenreWinner } from '@/lib/supabase'
 import { FormControlManager } from '@/components/admin/FormControlManager'
-import { OrganizationManager } from '@/components/admin/OrganizationManager'
+import OrganizationManager from '@/components/admin/OrganizationManager'
 import { SubmissionsManager } from '@/components/admin/SubmissionsManager'
 import { KegiatanManager } from '@/components/admin/KegiatanManager'
 import { DutaGenreManager } from '@/components/admin/DutaGenreManager'

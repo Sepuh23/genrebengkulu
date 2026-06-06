@@ -15,7 +15,7 @@ interface OrganizationManagerProps {
   onUpdate: () => void
 }
 
-export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: OrganizationManagerProps) {
+export default function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: OrganizationManagerProps) {
   const [activeTab, setActiveTab] = useState<'pengurus' | 'struktur'>('pengurus')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<Pengurus | StrukturJabatan | null>(null)
@@ -25,7 +25,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedPeriode, setSelectedPeriode] = useState<string>('all')
-  // Multi-select state
   const [selectedPengurusIds, setSelectedPengurusIds] = useState<Set<number>>(new Set())
   const [selectedStrukturIds, setSelectedStrukturIds] = useState<Set<number>>(new Set())
 
@@ -48,7 +47,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   const [pengurusForm, setPengurusForm] = useState(initialPengurusForm)
   const [strukturForm, setStrukturForm] = useState(initialStrukturForm)
   const [selectedRoleType, setSelectedRoleType] = useState<'all' | 'administrator' | 'member'>('all')
-  // Search queries
   const [searchPengurus, setSearchPengurus] = useState('')
   const [searchStruktur, setSearchStruktur] = useState('')
 
@@ -74,11 +72,8 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     })
   }, [pengurus, selectedPeriode, selectedRoleType, searchPengurus, strukturJabatan])
 
-  // Export helpers for Pengurus
   const buildPengurusRows = () => {
-    const header = [
-      'ID', 'Nama', 'Jabatan', 'Instagram', 'Periode', 'Tipe'
-    ]
+    const header = ['ID', 'Nama', 'Jabatan', 'Instagram', 'Periode', 'Tipe']
     const rows = filteredPengurus.map(p => [
       p.id,
       p.nama || '',
@@ -97,7 +92,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
       if (/[",\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"'
       return v
     }).join(','))
-    const csvContent = '\ufeff' + csvLines.join('\n') // BOM for Excel
+    const csvContent = '\ufeff' + csvLines.join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -124,7 +119,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     return list.filter(s => (s.nama_jabatan || '').toLowerCase().includes(q))
   }, [strukturJabatan, searchStruktur])
 
-  // Selection helpers - Pengurus
   const isPengurusSelected = (id: number) => selectedPengurusIds.has(id)
   const togglePengurusSelect = (id: number) => {
     setSelectedPengurusIds(prev => {
@@ -141,7 +135,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     }
   }
 
-  // Selection helpers - Struktur
   const isStrukturSelected = (id: number) => selectedStrukturIds.has(id)
   const toggleStrukturSelect = (id: number) => {
     setSelectedStrukturIds(prev => {
@@ -158,7 +151,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     }
   }
 
-  // Bulk delete handler
   const handleBulkDelete = async (target: 'pengurus' | 'struktur', mode: 'selected' | 'all') => {
     const table = target === 'pengurus' ? 'pengurus' : 'struktur_jabatan'
     let ids: number[] = []
@@ -166,7 +158,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
       ids = mode === 'selected' ? Array.from(selectedPengurusIds) : filteredPengurus.map(p => p.id)
     } else {
       const rawIds = mode === 'selected' ? Array.from(selectedStrukturIds) : filteredStruktur.map(s => s.id)
-      // Protect Struktur rows that are referenced by pengurus
       const nonDeletable = new Set(pengurus.map(p => p.jabatan_id))
       const deletable = rawIds.filter(id => !nonDeletable.has(id))
       ids = deletable
@@ -174,15 +165,12 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
         setMessage({ type: 'error', text: 'Beberapa jabatan tidak dapat dihapus karena sedang dipakai oleh pengurus.' })
       }
     }
-
     if (!ids.length) {
       setMessage({ type: 'error', text: 'Tidak ada item yang dipilih untuk dihapus.' })
       return
     }
-
     const label = mode === 'selected' ? 'terpilih' : 'pada tampilan (filter) ini'
-    if (!confirm(`Hapus ${ids.length} item ${label} dari ${table}? Tindakan ini tidak dapat dibatalkan.`)) return
-
+    if (!confirm(`Hapus ${ids.length} item ${label} dari ${table}?`)) return
     setLoading(true)
     setMessage(null)
     try {
@@ -193,7 +181,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
       else setSelectedStrukturIds(new Set())
       onUpdate()
     } catch (error) {
-      console.error(`Bulk delete error (${table}):`, error)
       const msg = error instanceof Error ? error.message : 'Gagal menghapus data.'
       setMessage({ type: 'error', text: msg })
     } finally {
@@ -210,29 +197,22 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     setUploadingImage(false)
   }
 
-  // FIX 1: Handle null/undefined in openModal
   const openModal = (item: Pengurus | StrukturJabatan | null = null) => {
     resetForms()
     if (item) {
       setEditingItem(item)
-      if ('nama' in item) { // Pengurus
+      if ('nama' in item) {
         setPengurusForm({
           ...initialPengurusForm,
           ...item,
-          jabatan_id: item.jabatan_id?.toString() ?? '', // FIX: safe navigation
+          jabatan_id: item.jabatan_id?.toString() ?? '',
           instagram: item.instagram ?? '',
           image_url: item.image_url ?? '',
-          role_type: (item.role_type === 'administrator' || item.role_type === 'member') 
-            ? item.role_type 
-            : 'administrator',
+          role_type: (item.role_type === 'administrator' || item.role_type === 'member') ? item.role_type : 'administrator',
         })
         if (item.image_url) setImagePreview(item.image_url)
-      } else { // Struktur
-        setStrukturForm({ 
-          ...initialStrukturForm, 
-          ...item, 
-          urutan: item.urutan?.toString() ?? '' 
-        })
+      } else {
+        setStrukturForm({ ...initialStrukturForm, ...item, urutan: item.urutan?.toString() ?? '' })
       }
     }
     setIsModalOpen(true)
@@ -240,7 +220,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
 
   const closeModal = () => {
     setIsModalOpen(false)
-    setTimeout(resetForms, 300) // Delay reset for transition
+    setTimeout(resetForms, 300)
   }
 
   const uploadImageToSupabase = async (file: File): Promise<string | null> => {
@@ -254,7 +234,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
       const { data: { publicUrl } } = supabase.storage.from('pik-r-bukti').getPublicUrl(filePath)
       return publicUrl
     } catch (error) {
-      console.error('Error uploading image:', error)
       const msg = error instanceof Error ? error.message : 'Gagal mengupload gambar!'
       setMessage({ type: 'error', text: msg })
       return null
@@ -263,12 +242,10 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
     }
   }
 
-  // FIX 2: Add validation for jabatan_id
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
-
     try {
       if (activeTab === 'pengurus') {
         let imageUrl = editingItem && 'image_url' in editingItem ? editingItem.image_url : ''
@@ -277,21 +254,13 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
           if (!uploadedUrl) throw new Error('Gagal mengupload gambar')
           imageUrl = uploadedUrl
         }
-
         const { nama, jabatan_id, periode } = pengurusForm
         if (!nama?.trim()) throw new Error('Nama wajib diisi.')
         if (!jabatan_id) throw new Error('Jabatan wajib dipilih.')
         if (!periode?.trim()) throw new Error('Periode wajib diisi.')
-        
         const jabatanIdNum = parseInt(jabatan_id)
         if (isNaN(jabatanIdNum)) throw new Error('ID Jabatan tidak valid')
-        
-        const payload = { 
-          ...pengurusForm, 
-          image_url: imageUrl, 
-          jabatan_id: jabatanIdNum 
-        }
-        
+        const payload = { ...pengurusForm, image_url: imageUrl, jabatan_id: jabatanIdNum }
         const { error } = editingItem
           ? await supabase.from('pengurus').update(payload).eq('id', editingItem.id)
           : await supabase.from('pengurus').insert(payload)
@@ -300,27 +269,19 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
         const { nama_jabatan, urutan } = strukturForm
         if (!nama_jabatan?.trim()) throw new Error('Nama Jabatan wajib diisi.')
         if (!urutan?.trim()) throw new Error('Urutan wajib diisi.')
-        
         const urutanNum = parseInt(urutan)
         if (isNaN(urutanNum)) throw new Error('Urutan harus berupa angka')
-        
-        const payload = { 
-          nama_jabatan, 
-          urutan: urutanNum 
-        }
-        
+        const payload = { nama_jabatan, urutan: urutanNum }
         const { error } = editingItem
           ? await supabase.from('struktur_jabatan').update(payload).eq('id', editingItem.id)
           : await supabase.from('struktur_jabatan').insert(payload)
         if (error) throw new Error(error.message)
       }
-
       setMessage({ type: 'success', text: `Data berhasil ${editingItem ? 'diperbarui' : 'ditambahkan'}!` })
       onUpdate()
       closeModal()
     } catch (error) {
-      console.error('Form submission error:', error)
-      const msg = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Terjadi kesalahan'
+      const msg = error instanceof Error ? error.message : 'Terjadi kesalahan'
       setMessage({ type: 'error', text: msg })
     } finally {
       setLoading(false)
@@ -329,8 +290,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
 
   const handleDelete = async (id: number) => {
     const table = activeTab === 'pengurus' ? 'pengurus' : 'struktur_jabatan'
-    if (!confirm(`Apakah Anda yakin ingin menghapus item ini dari ${table}?`)) return
-
+    if (!confirm(`Apakah Anda yakin ingin menghapus item ini?`)) return
     setLoading(true)
     setMessage(null)
     try {
@@ -339,7 +299,6 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
       setMessage({ type: 'success', text: 'Item berhasil dihapus!' })
       onUpdate()
     } catch (error) {
-      console.error(`Error deleting from ${table}:`, error)
       const msg = error instanceof Error ? error.message : 'Gagal menghapus item.'
       setMessage({ type: 'error', text: msg })
     } finally {
@@ -354,7 +313,7 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
         setMessage({ type: 'error', text: 'File harus berupa gambar!' })
         return
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         setMessage({ type: 'error', text: 'Ukuran file maksimal 5MB!' })
         return
       }
@@ -368,10 +327,10 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   const renderTabs = () => (
     <div className="border-b border-gray-200 dark:border-gray-700">
       <nav className="-mb-px flex space-x-6">
-        <button onClick={() => setActiveTab('pengurus')} className={`flex items-center space-x-2 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'pengurus' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-600'}`}>
+        <button onClick={() => setActiveTab('pengurus')} className={`flex items-center space-x-2 py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'pengurus' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'}`}>
           <Users className="h-5 w-5" /> <span>Data Pengurus</span>
         </button>
-        <button onClick={() => setActiveTab('struktur')} className={`flex items-center space-x-2 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'struktur' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300 dark:hover:border-gray-600'}`}>
+        <button onClick={() => setActiveTab('struktur')} className={`flex items-center space-x-2 py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'struktur' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'}`}>
           <Briefcase className="h-5 w-5" /> <span>Struktur Jabatan</span>
         </button>
       </nav>
@@ -379,110 +338,54 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   )
 
   const renderPengurusTab = () => (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl">
-      <div className="p-4 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-stretch gap-3 w-full sm:w-auto">
-          <div className="relative">
-            <select value={selectedPeriode} onChange={e => setSelectedPeriode(e.target.value)} className="appearance-none w-full sm:w-auto bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              {periodes.map(p => <option key={p} value={p}>{p === 'all' ? 'Semua Periode' : p}</option>)}
-            </select>
-            <ChevronsUpDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-          <div className="relative">
-            <select value={selectedRoleType} onChange={e => setSelectedRoleType(e.target.value as 'all' | 'administrator' | 'member')} className="appearance-none w-full sm:w-auto bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-              <option value="all">Semua Tipe</option>
-              <option value="administrator">Administrator</option>
-              <option value="member">Member</option>
-            </select>
-            <ChevronsUpDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-          <input
-            type="text"
-            value={searchPengurus}
-            onChange={e => setSearchPengurus(e.target.value)}
-            placeholder="Cari nama, instagram, jabatan..."
-            className="w-full sm:w-64 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm"
-          />
-          <div className="flex items-center gap-2">
-            <button onClick={exportPengurusCSV} className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">Export CSV</button>
-            <button onClick={exportPengurusXLSX} className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">Export XLSX</button>
-          </div>
+    <div className="bg-white shadow-md rounded-xl">
+      <div className="p-4 flex justify-between items-center border-b">
+        <div className="flex gap-3">
+          <select value={selectedPeriode} onChange={e => setSelectedPeriode(e.target.value)} className="px-3 py-2 border rounded-md">
+            {periodes.map(p => <option key={p} value={p}>{p === 'all' ? 'Semua Periode' : p}</option>)}
+          </select>
+          <select value={selectedRoleType} onChange={e => setSelectedRoleType(e.target.value as any)} className="px-3 py-2 border rounded-md">
+            <option value="all">Semua Tipe</option>
+            <option value="administrator">Administrator</option>
+            <option value="member">Member</option>
+          </select>
+          <input type="text" value={searchPengurus} onChange={e => setSearchPengurus(e.target.value)} placeholder="Cari..." className="px-3 py-2 border rounded-md w-64" />
+          <button onClick={exportPengurusCSV} className="px-3 py-2 border rounded-md">CSV</button>
+          <button onClick={exportPengurusXLSX} className="px-3 py-2 border rounded-md">Excel</button>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           {selectedPengurusIds.size > 0 && (
-            <button
-              onClick={() => handleBulkDelete('pengurus', 'selected')}
-              className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-              disabled={loading}
-            >
-              <Trash2 className="w-4 h-4 mr-2" /> Hapus Terpilih ({selectedPengurusIds.size})
-            </button>
+            <button onClick={() => handleBulkDelete('pengurus', 'selected')} className="px-3 py-2 bg-red-600 text-white rounded-md">Hapus ({selectedPengurusIds.size})</button>
           )}
-          {false && filteredPengurus.length > 0 && (
-            <button
-              onClick={() => handleBulkDelete('pengurus', 'all')}
-              className="flex items-center px-3 py-2 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 rounded-lg hover:bg-red-100 text-sm"
-              disabled={loading}
-            >
-              <Trash2 className="w-4 h-4 mr-2" /> Hapus Semua (Filter)
-            </button>
-          )}
-          <button onClick={() => openModal()} className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-            <Plus className="w-5 h-5 mr-2" /> Tambah Pengurus
-          </button>
+          <button onClick={() => openModal()} className="px-4 py-2 bg-red-600 text-white rounded-md">+ Tambah</button>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700/50">
+        <table className="min-w-full">
+          <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3">
-                <input
-                  type="checkbox"
-                  aria-label="Pilih semua pengurus"
-                  checked={filteredPengurus.length > 0 && selectedPengurusIds.size === filteredPengurus.length}
-                  onChange={togglePengurusSelectAll}
-                />
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jabatan</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Periode</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">Edit</span></th>
+              <th className="px-4 py-2"><input type="checkbox" onChange={togglePengurusSelectAll} /></th>
+              <th className="px-4 py-2 text-left">Nama</th>
+              <th className="px-4 py-2 text-left">Jabatan</th>
+              <th className="px-4 py-2 text-left">Periode</th>
+              <th className="px-4 py-2"></th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody>
             {filteredPengurus.map(p => (
-              <tr key={p.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <input
-                    type="checkbox"
-                    aria-label={`Pilih ${p.nama}`}
-                    checked={isPengurusSelected(p.id)}
-                    onChange={() => togglePengurusSelect(p.id)}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <Image
-                        className="h-10 w-10 rounded-full object-cover"
-                        src={p.image_url || `https://ui-avatars.com/api/?name=${p.nama}&background=random`}
-                        alt={p.nama}
-                        width={40}
-                        height={40}
-                      />
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{p.nama}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{p.instagram}</div>
-                    </div>
+              <tr key={p.id} className="border-t">
+                <td className="px-4 py-2"><input type="checkbox" checked={isPengurusSelected(p.id)} onChange={() => togglePengurusSelect(p.id)} /></td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <Image src={p.image_url || `https://ui-avatars.com/api/?name=${p.nama}`} alt={p.nama} width={32} height={32} className="rounded-full" />
+                    <span>{p.nama}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{strukturJabatan.find(j => j.id === p.jabatan_id)?.nama_jabatan}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{p.periode}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                  <button onClick={() => openModal(p)} className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"><Edit className="h-5 w-5" /></button>
-                  <button onClick={() => handleDelete(p.id)} className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"><Trash2 className="h-5 w-5" /></button>
+                <td className="px-4 py-2">{strukturJabatan.find(j => j.id === p.jabatan_id)?.nama_jabatan}</td>
+                <td className="px-4 py-2">{p.periode}</td>
+                <td className="px-4 py-2">
+                  <button onClick={() => openModal(p)} className="text-blue-600 mr-2">Edit</button>
+                  <button onClick={() => handleDelete(p.id)} className="text-red-600">Hapus</button>
                 </td>
               </tr>
             ))}
@@ -493,63 +396,35 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   )
 
   const renderStrukturTab = () => (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl">
-       <div className="p-4 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-200 dark:border-gray-700">
-        <input
-          type="text"
-          value={searchStruktur}
-          onChange={e => setSearchStruktur(e.target.value)}
-          placeholder="Cari nama jabatan..."
-          className="w-full sm:w-72 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm"
-        />
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+    <div className="bg-white shadow-md rounded-xl">
+      <div className="p-4 flex justify-between items-center border-b">
+        <input type="text" value={searchStruktur} onChange={e => setSearchStruktur(e.target.value)} placeholder="Cari jabatan..." className="px-3 py-2 border rounded-md w-64" />
+        <div className="flex gap-2">
           {selectedStrukturIds.size > 0 && (
-            <button
-              onClick={() => handleBulkDelete('struktur', 'selected')}
-              className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-              disabled={loading}
-            >
-              <Trash2 className="w-4 h-4 mr-2" /> Hapus Terpilih ({selectedStrukturIds.size})
-            </button>
+            <button onClick={() => handleBulkDelete('struktur', 'selected')} className="px-3 py-2 bg-red-600 text-white rounded-md">Hapus ({selectedStrukturIds.size})</button>
           )}
-          <button onClick={() => openModal()} className="flex items-center justify-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-            <Plus className="w-5 h-5 mr-2" /> Tambah Jabatan
-          </button>
+          <button onClick={() => openModal()} className="px-4 py-2 bg-red-600 text-white rounded-md">+ Tambah Jabatan</button>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700/50">
+        <table className="min-w-full">
+          <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3">
-                <input
-                  type="checkbox"
-                  aria-label="Pilih semua jabatan"
-                  checked={filteredStruktur.length > 0 && selectedStrukturIds.size === filteredStruktur.length}
-                  onChange={toggleStrukturSelectAll}
-                />
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Jabatan</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Urutan</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">Edit</span></th>
+              <th className="px-4 py-2"><input type="checkbox" onChange={toggleStrukturSelectAll} /></th>
+              <th className="px-4 py-2 text-left">Nama Jabatan</th>
+              <th className="px-4 py-2 text-left">Urutan</th>
+              <th className="px-4 py-2"></th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody>
             {filteredStruktur.sort((a, b) => a.urutan - b.urutan).map(s => (
-              <tr key={s.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <input
-                    type="checkbox"
-                    aria-label={`Pilih jabatan ${s.nama_jabatan}`}
-                    checked={isStrukturSelected(s.id)}
-                    onChange={() => toggleStrukturSelect(s.id)}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{s.nama_jabatan}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{s.urutan}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                  <button onClick={() => openModal(s)} className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"><Edit className="h-5 w-5" /></button>
-                  <button onClick={() => handleDelete(s.id)} disabled={pengurus.some(p => p.jabatan_id === s.id)} className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 disabled:text-gray-400 disabled:cursor-not-allowed"><Trash2 className="h-5 w-5" /></button>
+              <tr key={s.id} className="border-t">
+                <td className="px-4 py-2"><input type="checkbox" checked={isStrukturSelected(s.id)} onChange={() => toggleStrukturSelect(s.id)} /></td>
+                <td className="px-4 py-2">{s.nama_jabatan}</td>
+                <td className="px-4 py-2">{s.urutan}</td>
+                <td className="px-4 py-2">
+                  <button onClick={() => openModal(s)} className="text-blue-600 mr-2">Edit</button>
+                  <button onClick={() => handleDelete(s.id)} className="text-red-600">Hapus</button>
                 </td>
               </tr>
             ))}
@@ -560,121 +435,54 @@ export function OrganizationManager({ pengurus, strukturJabatan, onUpdate }: Org
   )
 
   const renderModal = () => (
-    <Transition appear show={isModalOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={closeModal}>
-        <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-          <div className="fixed inset-0 bg-black bg-opacity-50" />
-        </Transition.Child>
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-                  {editingItem ? `Edit ${activeTab === 'pengurus' ? 'Pengurus' : 'Jabatan'}` : `Tambah ${activeTab === 'pengurus' ? 'Pengurus' : 'Jabatan'}`}
-                </Dialog.Title>
-                <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
-                  {activeTab === 'pengurus' ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Lengkap</label>
-                          <input type="text" value={pengurusForm.nama} onChange={e => setPengurusForm({...pengurusForm, nama: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Jabatan</label>
-                          <select value={pengurusForm.jabatan_id} onChange={e => setPengurusForm({...pengurusForm, jabatan_id: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required>
-                            <option value="">Pilih Jabatan</option>
-                            {strukturJabatan.map(j => <option key={j.id} value={j.id}>{j.nama_jabatan}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Periode</label>
-                          <input type="text" value={pengurusForm.periode} onChange={e => setPengurusForm({...pengurusForm, periode: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipe</label>
-                          <select value={pengurusForm.role_type} onChange={e => setPengurusForm({...pengurusForm, role_type: e.target.value as 'administrator' | 'member'})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required>
-                            <option value="administrator">Administrator (Ditampilkan)</option>
-                            <option value="member">Member (Tidak ditampilkan)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Instagram (opsional)</label>
-                          <input type="text" value={pengurusForm.instagram} onChange={e => setPengurusForm({...pengurusForm, instagram: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Foto Pengurus</label>
-                        <div className="mt-1 flex items-center space-x-4">
-                          <div className="flex-shrink-0 h-24 w-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                            {imagePreview ? (
-                              <Image
-                                src={imagePreview}
-                                alt="Preview"
-                                width={96}
-                                height={96}
-                                className="h-full w-full object-cover"
-                                unoptimized
-                              />
-                            ) : (
-                              <User className="h-12 w-12 text-gray-400" />
-                            )}
-                          </div>
-                          <label htmlFor="file-upload" className="relative cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <span>{uploadingImage ? 'Mengupload...' : 'Pilih Gambar'}</span>
-                            <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleImageFileSelect} accept="image/*" disabled={uploadingImage} />
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Jabatan</label>
-                          <input type="text" value={strukturForm.nama_jabatan} onChange={e => setStrukturForm({...strukturForm, nama_jabatan: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Urutan</label>
-                          <input type="number" value={strukturForm.urutan} onChange={e => setStrukturForm({...strukturForm, urutan: e.target.value})} className="mt-1 w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required />
-                        </div>
-                    </div>
-                  )}
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
-                      Batal
-                    </button>
-                    <button type="submit" disabled={loading || uploadingImage} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center">
-                      {loading ? 'Menyimpan...' : <><Save className="h-4 w-4 mr-2"/>Simpan</>}
-                    </button>
-                  </div>
-                </form>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </div>
-      </Dialog>
-    </Transition>
+    <Dialog open={isModalOpen} onClose={closeModal} className="relative z-50">
+      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="bg-white rounded-lg p-6 max-w-md w-full">
+          <Dialog.Title className="text-lg font-bold mb-4">{editingItem ? 'Edit' : 'Tambah'} {activeTab === 'pengurus' ? 'Pengurus' : 'Jabatan'}</Dialog.Title>
+          <form onSubmit={handleFormSubmit}>
+            {activeTab === 'pengurus' ? (
+              <div className="space-y-3">
+                <input type="text" value={pengurusForm.nama} onChange={e => setPengurusForm({...pengurusForm, nama: e.target.value})} placeholder="Nama" className="w-full p-2 border rounded-md" required />
+                <select value={pengurusForm.jabatan_id} onChange={e => setPengurusForm({...pengurusForm, jabatan_id: e.target.value})} className="w-full p-2 border rounded-md" required>
+                  <option value="">Pilih Jabatan</option>
+                  {strukturJabatan.map(j => <option key={j.id} value={j.id}>{j.nama_jabatan}</option>)}
+                </select>
+                <input type="text" value={pengurusForm.periode} onChange={e => setPengurusForm({...pengurusForm, periode: e.target.value})} placeholder="Periode" className="w-full p-2 border rounded-md" required />
+                <input type="text" value={pengurusForm.instagram} onChange={e => setPengurusForm({...pengurusForm, instagram: e.target.value})} placeholder="Instagram" className="w-full p-2 border rounded-md" />
+                <input type="file" onChange={handleImageFileSelect} accept="image/*" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input type="text" value={strukturForm.nama_jabatan} onChange={e => setStrukturForm({...strukturForm, nama_jabatan: e.target.value})} placeholder="Nama Jabatan" className="w-full p-2 border rounded-md" required />
+                <input type="number" value={strukturForm.urutan} onChange={e => setStrukturForm({...strukturForm, urutan: e.target.value})} placeholder="Urutan" className="w-full p-2 border rounded-md" required />
+              </div>
+            )}
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={closeModal} className="px-4 py-2 border rounded-md">Batal</button>
+              <button type="submit" disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-md">Simpan</button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
   )
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl shadow-lg">
+    <div className="p-6 bg-gray-50 rounded-lg">
       {message && (
-        <div className={`p-4 rounded-lg text-sm mb-4 ${message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
+        <div className={`p-3 rounded-md mb-4 ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {message.text}
         </div>
       )}
-
-      <div className="mb-2 flex items-center gap-3">
+      <div className="flex items-center gap-2 mb-4">
         <AdminLogo size="sm" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Pengurus & Jabatan</h2>
+        <h2 className="text-xl font-semibold">Pengurus & Jabatan</h2>
       </div>
-
       {renderTabs()}
-
-      <div className="mt-6">
+      <div className="mt-4">
         {activeTab === 'pengurus' ? renderPengurusTab() : renderStrukturTab()}
       </div>
-      
       {renderModal()}
     </div>
   )
